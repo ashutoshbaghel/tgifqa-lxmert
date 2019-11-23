@@ -46,6 +46,11 @@ class VQA:
         
         # Model
         self.model = VQAModel(self.train_tuple.dataset.num_answers)
+        # Print model info:
+        print("Num of answers:")
+        print(self.train_tuple.dataset.num_answers)
+        print("Model info:")
+        print(self.model)
 
         # Load pre-trained weights
         if args.load_lxmert is not None:
