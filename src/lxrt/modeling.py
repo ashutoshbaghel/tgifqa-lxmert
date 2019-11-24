@@ -616,19 +616,34 @@ class LXRTEncoder(nn.Module):
         #       Keep this design to allow loading BERT weights.
         visn_feats = self.visn_fc(visn_feats)
 
+        print("Before running the language-encoders---> ")
+        print("Size of visn_feats= ", visn_feats.size())
+        print("Size of lang_feats= ", lang_feats.size())
+
         # Run language layers
         for layer_module in self.layer:
             lang_feats = layer_module(lang_feats, lang_attention_mask)
 
+        print("Before running the visual-encoders---> ")
+        print("Size of visn_feats= ", visn_feats.size())
+        print("Size of lang_feats= ", lang_feats.size())
+
         # Run relational layers
         for layer_module in self.r_layers:
             visn_feats = layer_module(visn_feats, visn_attention_mask)
+
+        print("Before running the cross-modal layers---> ")
+        print("Size of visn_feats= ", visn_feats.size())
+        print("Size of lang_feats= ", lang_feats.size())
 
         # Run cross-modality layers
         for layer_module in self.x_layers:
             lang_feats, visn_feats = layer_module(lang_feats, lang_attention_mask,
                                                   visn_feats, visn_attention_mask)
 
+        print("forward() produces these dimesions ---> ")
+        print("Size of visn_feats= ", visn_feats.size())
+        print("Size of lang_feats= ", lang_feats.size())
         return lang_feats, visn_feats
 
 
