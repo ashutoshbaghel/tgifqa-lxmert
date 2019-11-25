@@ -76,6 +76,8 @@ class VQATorchDataset(Dataset):
         super().__init__()
         self.raw_dataset = dataset
 
+        self.flag = True
+
         if args.tiny:
             topk = TINY_IMG_NUM
         elif args.fast:
@@ -126,9 +128,10 @@ class VQATorchDataset(Dataset):
         ques = datum['sent']
 
         # abaghel : Get image info
-        if item == 0:
+        if item == 0 and self.flag:
             print("Printing image info from the dataset:")
             print(self.imgid2img[img_id])
+            self.flag = False
 
         img_info = self.imgid2img[img_id]
         obj_num = img_info['num_boxes']
