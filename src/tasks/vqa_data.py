@@ -125,7 +125,11 @@ class VQATorchDataset(Dataset):
         ques_id = datum['question_id']
         ques = datum['sent']
 
-        # Get image info
+        # abaghel : Get image info
+        if item == 0:
+            print("Printing image info from the dataset:")
+            print(self.imgid2img[img_id])
+
         img_info = self.imgid2img[img_id]
         obj_num = img_info['num_boxes']
         feats = img_info['features'].copy()

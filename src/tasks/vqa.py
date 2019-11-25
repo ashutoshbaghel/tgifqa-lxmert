@@ -87,6 +87,7 @@ class VQA:
         iter_wrapper = (lambda x: tqdm(x, total=len(loader))) if args.tqdm else (lambda x: x)
 
         best_valid = 0.
+        flag = True
         for epoch in range(args.epochs):
             quesid2ans = {}
             for i, (ques_id, feats, boxes, sent, target) in iter_wrapper(enumerate(loader)):
@@ -95,6 +96,11 @@ class VQA:
                 self.optim.zero_grad()
 
                 feats, boxes, target = feats.cuda(), boxes.cuda(), target.cuda()
+                if flag:
+                    print("Training is done on these variables from datalaoder:")
+                    print("feats: ", feats)
+                    print("boxes: ", boxes)
+                    print("target: ", target)
                 logit = self.model(feats, boxes, sent)
                 assert logit.dim() == target.dim() == 2
                 loss = self.bce_loss(logit, target)
