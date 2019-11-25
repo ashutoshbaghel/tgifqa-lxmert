@@ -14,7 +14,8 @@ MAX_VQA_LENGTH = 20
 class VQAModel(nn.Module):
     def __init__(self, num_answers):
         super().__init__()
-        
+
+        self.flag = True
         # Build LXRT encoder
         self.lxrt_encoder = LXRTEncoder(
             args,
@@ -43,6 +44,11 @@ class VQAModel(nn.Module):
         """
         x = self.lxrt_encoder(sent, (feat, pos))
         logit = self.logit_fc(x)
+
+        if self.flag:
+            print("Dimensions out from lxrt encoder --> goes to FC layer")
+            print(x.size())
+            self.flag=False
 
         return logit
 

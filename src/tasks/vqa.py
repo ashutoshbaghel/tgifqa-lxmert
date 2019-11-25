@@ -98,9 +98,10 @@ class VQA:
                 feats, boxes, target = feats.cuda(), boxes.cuda(), target.cuda()
                 if flag:
                     print("Training is done on these variables from datalaoder:")
-                    print("feats: ", feats)
-                    print("boxes: ", boxes)
-                    print("target: ", target)
+                    print("feats: ", feats.size())
+                    print("boxes: ", boxes.size())
+                    print("target: ", target.size())
+                    flag = False
                 logit = self.model(feats, boxes, sent)
                 assert logit.dim() == target.dim() == 2
                 loss = self.bce_loss(logit, target)
