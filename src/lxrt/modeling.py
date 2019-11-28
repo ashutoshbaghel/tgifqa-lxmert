@@ -38,7 +38,7 @@ from .file_utils import cached_path
 logger = logging.getLogger(__name__)
 
 cfg = get_cfg()
-cfg_file = "SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
+cfg_file = "../SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
 cfg.merge_from_file(cfg_file)
 d = "cuda" if torch.cuda.is_available() else "cpu"
 PRETRAINED_MODEL_ARCHIVE_MAP = {

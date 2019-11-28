@@ -29,6 +29,10 @@ from lxrt.SlowFast.slowfast.datasets.tgif_direct import TGIF
 
 
 
+cfg = get_cfg()
+cfg_file = "../lxrt/SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
+cfg.merge_from_file(cfg_file)
+
 def assert_exists(path):
 	assert os.path.exists(path), 'Does not exist : {}'.format(path)
 
@@ -184,6 +188,73 @@ FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
               "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
 FIELDNAMES would be keys in the dict returned by load_obj_tsv.
 """
+
+class FrameQADataset(object):
+    def __init__(self, dataset_name='train', data_type=None, dataframe_dir=None, vocab_dir=None):
+        self.dataframe_dir = dataframe_dir # of the form data/tgif/vocabulary
+        self.vocab_dir = vocab_dir # of the form data/tgif/dataframe
+        self.data_type = data_type # 'TRANS'
+        self.dataset_name = dataset_name # 'train' or 'val' or 'test'
+
+        self.csv = self.read_from_csvfile("frameqa")
+        self.header2idx = self.header2idx()
+        self.gif_names = self.csv[:,self.header2idx['gif_name']]
+        self.gif_tensor = None
+        self.questions = self.csv[:,self.header2idx['question']]
+        self.answer = self.csv[:,self.header2idx['answer']]
+        self._build_ans_vocab()
+        ## GIF LOADER ##
+        ## NOTE: May have to change the relative path of gif dir as 
+        ## an extra argument to TGIF class init
+        loader  = TGIF(cfg, "train")
+        self.get_gif_tensor = loader.__getitem__
+        
+    def _build_ans_vocab(self):
+        vocab = set()
+        for ans in self.answer:
+            vocab.add(str(ans))
+        self.vocab = sorted(list(vocab))
+        self.id2ans = self.vocab
+        self.ans2id = dict(zip(self.vocab, np.arange(len(self.vocab))))
+        self.vocab_len = len(self.vocab)
+        
+    def __getitem__(self, i): # whats the argument for this
+        gif_path = self.gif_names[i]
+        #pick up ith gif_tensor
+        #NOTE: gif_path is only the gif name, not the relative path
+        # REturn value: tuple (slow frames, fast frames) where frame -> (t, 3, h, w)
+        gif_tensor = self.get_gif_tensor(gif_path)
+        
+        return gif_tensor, self.questions[i], self.ans2id[self.answer[i]]
+
+    def __len__(self):
+        return len(self.questions)
+    
+    def header2idx(self):
+        return {'gif_name':0,'question':1,'answer':2}
+
+    def read_from_csvfile(self, category=None):
+        print(category)
+        train_data_path = os.path.join(self.dataframe_dir, 'Train_'+category+'_question.csv')
+        test_data_path = os.path.join(self.dataframe_dir, 'Test_'+category+'_question.csv')
+
+        csv_data=[]
+        if self.dataset_name=='train':
+            with open(train_data_path) as file:
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    csv_data.append(row)
+        elif self.dataset_name=='test':
+            with open(test_data_path) as file:
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    csv_data.append(row)
+        csv_data.pop(0)
+
+        return np.asarray(csv_data)
+
+
+
 class VQATorchDataset(Dataset):
     def __init__(self, dataset: VQADataset):
         super().__init__()

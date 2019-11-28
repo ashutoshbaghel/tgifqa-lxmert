@@ -4,8 +4,8 @@ import torch
 import torch.nn as nn
 from temporal_attention import Temporal_Transformer
 
-class cnn_bridge_network(nn.Module,  attention=False, num_head = 4, query_size = 1000, num_frames = 32):
-    def __init__(self, hidden_channels, concat_size ):
+class cnn_bridge_network(nn.Module):
+    def __init__(self, hidden_channels, concat_size,attention=False, num_head = 4, query_size = 1000, num_frames = 32 ):
         super().__init__()
         intermediate_hc = int(hidden_channels/2)
         self.fast_avg_pool_3d = nn.AvgPool3d((4, 1, 1), stride=(4, 1, 1))
