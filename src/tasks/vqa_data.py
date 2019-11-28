@@ -10,6 +10,8 @@ from torch.utils.data import Dataset
 
 from param import args
 from utils import load_obj_tsv
+import os
+import csv
 
 # Load part of the dataset for fast checking.
 # Notice that here is the number of images instead of the number of data,
@@ -21,6 +23,8 @@ FAST_IMG_NUM = 5000
 VQA_DATA_ROOT = 'data/vqa/'
 MSCOCO_IMGFEAT_ROOT = 'data/mscoco_imgfeat/'
 
+def assert_exists(path):
+	assert os.path.exists(path), 'Does not exist : {}'.format(path)
 
 class VQADataset:
     """
@@ -64,6 +68,101 @@ class VQADataset:
     def __len__(self):
         return len(self.data)
 
+'''API for TGIF dataset which loads GIF tensor and prepares question and 
+   options per GIF
+   Repo looks like : 
+   /lxmert/data/tgif/dataframe -> This contains GIF tensors and csv file
+   		/lxmert/data/tgif/dataframe/gif_tensors -> Contains GIF tensors
+
+   /lxmert/data/tgif/vocabulary -> This contains vocabulary, word2idx, ans2idx etc.
+   		/lxmert/data/tgif/vocabulary/word_matrix_<data_type>.pkl
+   		/lxmert/data/tgif/vocabulary/word_to_index_<data_type>.pkl
+   		/lxmert/data/tgif/vocabulary/index_to_word_<data_type>.pkl
+   		/lxmert/data/tgif/vocabulary/ans_to_index_<data_type>.pkl
+   		/lxmert/data/tgif/vocabulary/index_to_ans_<data_type>.pkl
+'''
+class TGIFDataset(Dataset):
+    def __init__(self, dataset_name='train', data_type=None, dataframe_dir=None, vocab_dir=None):
+        self.dataframe_dir = dataframe_dir # of the form data/tgif/vocabulary
+        self.vocab_dir = vocab_dir # of the form data/tgif/dataframe
+        self.data_type = data_type # 'TRANS'
+        self.dataset_name = dataset_name # 'train' or 'val' or 'test'
+
+        self.csv = self.read_from_csvfile()
+        self.header2idx = self.header2idx()
+        self.gif_names = self.csv[:,header2idx['gif_name']]
+        self.gif_tensor = None
+        self.questions = self.csv[:,header2idx['question']]
+        self.answers = self.csv[:,header2idx['answer']]
+        self.mc_options = self.csv[:,header2idx['a1']:header2idx['a5']+1]
+
+    def __getitem__(self, i): # whats the argument for this
+    	gif_path = os.path.join(self.dataframe_dir, 'gif_tensors')
+    	#pick up ith gif_tensor
+    	return self.gif_tensor, self.questions[i], self.mc_options[i], self.answers[i]
+
+    def header2idx(self):
+    	return {'gif_name':0,'question':1,'a1':2,'a2':3,'a3':4,'a4':5,'a5':6,'answer':7,'vid_id':8,'key':9}
+
+    def read_from_csvfile(self):
+        assert self.data_type in ['TRANS', 'ACTION'] # ACTION just for starting, will be using TRANS finally
+
+        self.total_q=[]
+        if self.data_type=='TRANS':
+            train_data_path = os.path.join(self.dataframe_dir, 'Train_transition_question.csv')
+            test_data_path = os.path.join(self.dataframe_dir, 'Test_transition_question.csv')
+
+            
+            with open(os.path.join(self.dataframe_dir, 'Total_transition_question.csv')) as file:
+            	csv_reader = csv.reader(file, delimiter='\t')
+            	for row in csv_reader:
+            		self.total_q.append(row)
+
+        elif self.data_type=='ACTION':
+         	train_data_path = os.path.join(self.dataframe_dir, 'Train_action_question.csv')
+            test_data_path = os.path.join(self.dataframe_dir, 'Test_action_question.csv')
+
+            with open(os.path.join(self.dataframe_dir, 'Total_action_question.csv')) as file:
+            	csv_reader = csv.reader(file, delimiter='\t')
+            	for row in csv_reader:
+            		self.total_q.append(row)
+        self.total_q.pop(0)
+
+        assert_exists(train_data_path)
+        assert_exits(test_data_path)
+
+        csv_data=[]
+        if self.dataset_name=='train':
+        	with open(train_data_path) as file:
+        		csv_reader = csv.reader(file, delimiter='\t')
+        		for row in csv_reader:
+        			csv_data.append(row)
+        elif self.dataset_name=='test':
+        	with open(test_data_path) as file:
+        		csv_reader = csv.reader(file, delimiter='\t')
+        		for row in csv_reader:
+        			csv_data.append(row)
+        csv_data.pop(0)
+
+        return np.asarray(csv_data)
+    '''
+    def build_vocabulary(self):
+
+    def load_vocabulary(self):
+    	word_matrix_path = os.path.join(self.vocab_dir, 'word_matrix_%s.pkl'%self.data_type)
+    	word2idx_path = os.path.join(self.vocab_dir, 'word_to_index_%s.pkl'%self.data_type)
+    	idx2word_path = os.path.join(self.vocab_dir, 'index_to_word_%s.pkl'%self.data_type)
+    	ans2idx_path = os.path.join(self.vocab_dir, 'ans_to_index_%s.pkl'%self.data_type)
+    	idx2ans_path = os.path.join(self.vocab_dir, 'index_to_ans_%s.pkl'%self.data_type)
+
+    	if not os.path.exists(word_matrix_path) and os.path.exists(word2idx_path) and \
+    			os.path.exists(idx2word_path) and os.path.exists(ans2idx_path) and \
+    			os.path.exists(idx2ans_path):
+    			build_vocabulary()
+	'''
+
+
+
 
 """
 An example in obj36 tsv:
@@ -75,8 +174,6 @@ class VQATorchDataset(Dataset):
     def __init__(self, dataset: VQADataset):
         super().__init__()
         self.raw_dataset = dataset
-
-        self.flag = True
 
         if args.tiny:
             topk = TINY_IMG_NUM
@@ -127,12 +224,7 @@ class VQATorchDataset(Dataset):
         ques_id = datum['question_id']
         ques = datum['sent']
 
-        # abaghel : Get image info
-        if item == 0 and self.flag:
-            print("Printing image info from the dataset:")
-            print(self.imgid2img[img_id])
-            self.flag = False
-
+        # Get image info
         img_info = self.imgid2img[img_id]
         obj_num = img_info['num_boxes']
         feats = img_info['features'].copy()
