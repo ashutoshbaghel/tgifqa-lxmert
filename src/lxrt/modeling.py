@@ -614,17 +614,17 @@ class LXRTEncoder(nn.Module):
         self.x_layers = nn.ModuleList(
             [LXRTXLayer(config) for _ in range(self.num_x_layers)]
         )
-        #self.r_layers = nn.ModuleList(
-        #    [BertLayer(config) for _ in range(self.num_r_layers)]
-        #)
-        self.r_layers = model_builder.build_model(cfg)
+        self.r_layers = nn.ModuleList(
+            [BertLayer(config) for _ in range(self.num_r_layers)]
+        )
+        #self.r_layers = model_builder.build_model(cfg)
 
     def forward(self, lang_feats, lang_attention_mask,
                 visn_feats, visn_attention_mask=None):
         # Run visual embedding layer
         # Note: Word embedding layer was executed outside this module.
         #       Keep this design to allow loading BERT weights.
-        #visn_feats = self.visn_fc(visn_feats)
+        visn_feats = self.visn_fc(visn_feats)
 
         if self.flag:
             print("Before running the language-encoders---> ")
@@ -641,9 +641,9 @@ class LXRTEncoder(nn.Module):
             print("Size of lang_feats= ", lang_feats.size())
 
         # Run relational layers
-        visn_feats = self.r_layers(visn_feats, lang_feats)
-        #for layer_module in self.r_layers:
-        #    visn_feats = layer_module(visn_feats, visn_attention_mask)
+        #visn_feats = self.r_layers(visn_feats, lang_feats)
+        for layer_module in self.r_layers:
+            visn_feats = layer_module(visn_feats, visn_attention_mask)
 
         if self.flag:
             print("Before running the cross-modal layers---> ")
