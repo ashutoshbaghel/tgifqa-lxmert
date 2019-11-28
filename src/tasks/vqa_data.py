@@ -96,11 +96,11 @@ class TGIFDataset(Dataset):
 
         self.csv = self.read_from_csvfile()
         self.header2idx = self.header2idx()
-        self.gif_names = self.csv[:,header2idx['gif_name']]
+        self.gif_names = self.csv[:,self.header2idx['gif_name']]
         self.gif_tensor = None
-        self.questions = self.csv[:,header2idx['question']]
-        self.answers = self.csv[:,header2idx['answer']]
-        self.mc_options = self.csv[:,header2idx['a1']:header2idx['a5']+1]
+        self.questions = self.csv[:,self.header2idx['question']]
+        self.answers = self.csv[:,self.header2idx['answer']]
+        self.mc_options = self.csv[:,self.header2idx['a1']:header2idx['a5']+1]
         ## GIF LOADER ##
         ## NOTE: May have to change the relative path of gif dir as 
         ## an extra argument to TGIF class init
