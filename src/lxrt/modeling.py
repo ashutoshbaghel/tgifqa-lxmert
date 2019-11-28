@@ -25,6 +25,8 @@ import shutil
 import tarfile
 import tempfile
 import sys
+from SlowFast.slowfast.models import model_builder
+from slowfast.config.defaults import get_cfg
 from io import open
 
 import torch
@@ -35,6 +37,10 @@ from .file_utils import cached_path
 
 logger = logging.getLogger(__name__)
 
+cfg = get_cfg()
+cfg_file = "SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
+cfg.merge_from_file(cfg_file)
+d = "cuda" if torch.cuda.is_available() else "cpu"
 PRETRAINED_MODEL_ARCHIVE_MAP = {
     'bert-base-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-base-uncased.tar.gz",
     'bert-large-uncased': "https://s3.amazonaws.com/models.huggingface.co/bert/bert-large-uncased.tar.gz",
@@ -608,9 +614,10 @@ class LXRTEncoder(nn.Module):
         self.x_layers = nn.ModuleList(
             [LXRTXLayer(config) for _ in range(self.num_x_layers)]
         )
-        self.r_layers = nn.ModuleList(
-            [BertLayer(config) for _ in range(self.num_r_layers)]
-        )
+        #self.r_layers = nn.ModuleList(
+        #    [BertLayer(config) for _ in range(self.num_r_layers)]
+        #)
+        self.r_layers = model_builder.build_model(cfg)
 
     def forward(self, lang_feats, lang_attention_mask,
                 visn_feats, visn_attention_mask=None):

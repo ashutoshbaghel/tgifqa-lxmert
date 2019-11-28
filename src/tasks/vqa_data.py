@@ -12,7 +12,8 @@ from param import args
 from utils import load_obj_tsv
 import os
 import csv
-
+import sys
+sys.path.insert(1, '../')
 # Load part of the dataset for fast checking.
 # Notice that here is the number of images instead of the number of data,
 # which means all related data to the images would be used.
@@ -22,6 +23,11 @@ FAST_IMG_NUM = 5000
 # The path to data and image features.
 VQA_DATA_ROOT = 'data/vqa/'
 MSCOCO_IMGFEAT_ROOT = 'data/mscoco_imgfeat/'
+
+from lxrt.SlowFast.slowfast.config.defaults import get_cfg
+from lxrt.SlowFast.slowfast.datasets.tgif_direct import TGIF
+
+
 
 def assert_exists(path):
 	assert os.path.exists(path), 'Does not exist : {}'.format(path)
@@ -60,7 +66,7 @@ class VQADataset:
         self.ans2label = json.load(open("data/vqa/trainval_ans2label.json"))
         self.label2ans = json.load(open("data/vqa/trainval_label2ans.json"))
         assert len(self.ans2label) == len(self.label2ans)
-
+        
     @property
     def num_answers(self):
         return len(self.ans2label)
@@ -95,10 +101,17 @@ class TGIFDataset(Dataset):
         self.questions = self.csv[:,header2idx['question']]
         self.answers = self.csv[:,header2idx['answer']]
         self.mc_options = self.csv[:,header2idx['a1']:header2idx['a5']+1]
-
+        ## GIF LOADER ##
+        ## NOTE: May have to change the relative path of gif dir as 
+        ## an extra argument to TGIF class init
+        loader  = TGIF(cfg, "train")
+        self.get_gif_tensor = loader.__getitem__
+        
     def __getitem__(self, i): # whats the argument for this
     	gif_path = os.path.join(self.dataframe_dir, 'gif_tensors')
     	#pick up ith gif_tensor
+        #NOTE: gif_path is only the gif name, not the relative path
+        gif_tensor = self.get_gif_tensor(gif_path)
     	return self.gif_tensor, self.questions[i], self.mc_options[i], self.answers[i]
 
     def header2idx(self):
