@@ -111,6 +111,7 @@ class TGIFDataset(Dataset):
     	gif_path = os.path.join(self.dataframe_dir, 'gif_tensors')
     	#pick up ith gif_tensor
         #NOTE: gif_path is only the gif name, not the relative path
+        # REturn value: tuple (slow frames, fast frames) where frame -> (t, 3, h, w)
         gif_tensor = self.get_gif_tensor(gif_path)
     	return self.gif_tensor, self.questions[i], self.mc_options[i], self.answers[i]
 
