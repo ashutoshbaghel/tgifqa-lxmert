@@ -1,48 +1,183 @@
 
 
-Epoch: 0 
-train loss: 0.14833139266785086 | train acc: 0.021915406530791146
+Epoch: 2 
+train loss: cnn_bridge_network(
+  (fast_avg_pool_3d): AvgPool3d(kernel_size=(4, 1, 1), stride=(4, 1, 1), padding=0)
+  (cnn1): Conv3d(2304, 384, kernel_size=(3, 3, 3), stride=(1, 1, 1))
+  (cnn2): Conv3d(384, 768, kernel_size=(3, 2, 2), stride=(1, 2, 2))
+  (temporal_attention): Temporal_Transformer(
+    (tail): Tail(
+      (bn1): BatchNorm2d(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (bn2): Norm()
+      (pos_embd): PositionalEncoder()
+      (Qpr): Sequential(
+        (0): Conv2d(256, 628, kernel_size=(3, 3), stride=(2, 2), bias=False)
+        (1): BatchNorm2d(628, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (2): ReLU()
+        (3): Conv2d(628, 1000, kernel_size=(3, 3), stride=(2, 2), bias=False)
+        (4): BatchNorm2d(1000, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (5): ReLU()
+      )
+      (list_layers): ModuleList(
+        (0): Block_head(
+          (T1): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T2): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T3): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+        )
+        (1): Block_head(
+          (T1): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T2): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T3): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+        )
+        (2): Block_head(
+          (T1): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T2): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T3): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+        )
+        (3): Block_head(
+          (T1): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T2): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+          (T3): TX(
+            (dropout): Dropout(p=0.1, inplace=False)
+            (dropout_2): Dropout(p=0.1, inplace=False)
+            (norm_1): Norm()
+            (norm_2): Norm()
+            (ff): FeedForward(
+              (linear_1): Linear(in_features=250, out_features=125, bias=True)
+              (dropout): Dropout(p=0.3, inplace=False)
+              (linear_2): Linear(in_features=125, out_features=250, bias=True)
+            )
+          )
+        )
+      )
+      (classifier): Sequential(
+        (0): Linear(in_features=1000, out_features=256, bias=True)
+        (1): Softmax(dim=-1)
+      )
+    )
+    (query_projection): Linear(in_features=768, out_features=50, bias=True)
+    (query_act): ReLU()
+  )
+) | train acc: 1
 
 
 Epoch: 0 
-train loss: 0.3210057974364203 | train acc: 0.021915406530791146
+train loss: 498.8064463683993 | train acc: 16.374269005847953
 
 
-Epoch: 0 
-train loss: 0.4644999692100178 | train acc: 0.04383081306158229
+Epoch: 1 
+train loss: 496.67785772095675 | train acc: 6.783625730994151
 
 
-Epoch: 0 
-train loss: 0.6022595096578973 | train acc: 0.06574621959237344
-
-
-Epoch: 0 
-train loss: 0.7893379875983126 | train acc: 0.08766162612316458
-
-
-Epoch: 0 
-train loss: 0.9566674371581528 | train acc: 0.10957703265395574
-
-
-Epoch: 0 
-train loss: 1.1263517248271744 | train acc: 0.13149243918474687
-
-
-Epoch: 0 
-train loss: 1.280211714667818 | train acc: 0.15340784571553803
-
-
-Epoch: 0 
-train loss: 1.4710789214735172 | train acc: 0.15340784571553803
-
-
-Epoch: 0 
-train loss: 1.6380079854515943 | train acc: 0.17532325224632916
-
-
-Epoch: 0 
-train loss: 1.7789830982789743 | train acc: 0.17532325224632916
-
-
-Epoch: 0 
-train loss: 1.9237836862038467 | train acc: 0.17532325224632916
+Epoch: 2 
+train loss: 496.40641442990307 | train acc: 5.380116959064328

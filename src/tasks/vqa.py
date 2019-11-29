@@ -33,9 +33,10 @@ logger = log("TEST1")
 def get_data_tuple(args_train, bs=32,shuffle=False, drop_last=False) -> DataTuple:
     dset = FrameQADataset(dataframe_dir="../../tgif-qa/dataset/", \
                           dataset_name="test")
+    num_workers = 8
     data_loader = DataLoader(
         dset, batch_size=bs,
-        shuffle=shuffle, num_workers=args.num_workers,
+        shuffle=shuffle, num_workers=num_workers,
         drop_last=drop_last, pin_memory=True
     )
     return DataTuple(dataset=dset, loader=data_loader, evaluator=None)
@@ -108,6 +109,7 @@ class VQA:
             quesid2ans = {}
             correct = 0
             total_loss = 0
+            total = 0
             print("Len of the dataloader: ", len(loader))
 #             Our new TGIFQA-Dataset returns:
 #             return gif_tensor, self.questions[i], self.ans2id[self.answer[i]]
@@ -133,8 +135,8 @@ class VQA:
 
                 score, label = logit.max(1)
                 score_t, target = target.max(1)
-                
                 correct += (label == target).sum().cpu().numpy()
+                total += len(label)
                 if epoch > 4:
                     for l,s,t in zip(label, sent, target):
                         print(l)
@@ -143,27 +145,27 @@ class VQA:
                         print("Answer", loader.dataset.label2ans[int(t.cpu().numpy())])
             logger.log(total_loss/len(loader), correct/len(loader)*100, epoch)
             print("=="*30)
-            print("Accuracy = " , correct/len(loader)*100)
-            print("Loss =" , total_loss/len(loader))
+            print("Accuracy = " , correct/total*100)
+            print("Loss =" , total_loss/total)
             print("=="*30)
 #             log_str = "\nEpoch %d: Train %0.2f\n" % (epoch, evaluator.evaluate(quesid2ans) * 100.)
 
-            if self.valid_tuple is not None:  # Do Validation
-                valid_score = self.evaluate(eval_tuple)
-                if valid_score > best_valid:
-                    best_valid = valid_score
-                    self.save("BEST")
+#             if self.valid_tuple is not None:  # Do Validation
+#                 valid_score = self.evaluate(eval_tuple)
+#                 if valid_score > best_valid:
+#                     best_valid = valid_score
+#                     self.save("BEST")
 
-                log_str += "Epoch %d: Valid %0.2f\n" % (epoch, valid_score * 100.) + \
-                           "Epoch %d: Best %0.2f\n" % (epoch, best_valid * 100.)
+#                 log_str += "Epoch %d: Valid %0.2f\n" % (epoch, valid_score * 100.) + \
+#                            "Epoch %d: Best %0.2f\n" % (epoch, best_valid * 100.)
 
-            print(log_str, end='')
+#             print(log_str, end='')
 
-            with open(self.output + "/log.log", 'a') as f:
-                f.write(log_str)
-                f.flush()
+#             with open(self.output + "/log.log", 'a') as f:
+#                 f.write(log_str)
+#                 f.flush()
 
-        self.save("LAST")
+            self.save(str(epoch))
 
     def predict(self, eval_tuple: DataTuple, dump=None):
         """
@@ -220,6 +222,13 @@ if __name__ == "__main__":
     print(os. environ['PYTHONPATH'])
     # Build Class
     vqa = VQA()
+    
+    for param in vqa.model.parameters():
+        param.requires_grad = False
+        
+    for param in vqa.model.lxrt_encoder.model.bert.encoder.r_layers.cnn_bridge.parameters():
+        param.requires_grad = True
+        
 #     print(vqa.model)
 #     print("*****************\n"*10)
     print("Back to main()")

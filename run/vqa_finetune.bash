@@ -13,5 +13,5 @@ CUDA_VISIBLE_DEVICES=$1 PYTHONPATH=$PYTHONPATH:./src:./src/lxrt/SlowFast \
     --train train,nominival --valid minival  \
     --llayers 9 --xlayers 5 --rlayers 5 \
     --loadLXMERTQA snap/pretrained/model \
-    --batchSize 4 --optim bert --lr 5e-5 --epochs 10 \
+    --batchSize 16 --optim bert --lr 1e-3 --epochs 10 \
     --tqdm --output $output ${@:3}
