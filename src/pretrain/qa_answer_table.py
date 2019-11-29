@@ -125,6 +125,7 @@ def load_lxmert_qa(path, model, label2ans):
     unload = 0
     if type(label2ans) is list:
         label2ans = {label: ans for label, ans in enumerate(label2ans)}
+    print(f"made change to {__name__}")
     for label, ans in label2ans.items():
         new_ans = answer_table.convert_ans(ans)
         if answer_table.used(new_ans):
@@ -137,14 +138,13 @@ def load_lxmert_qa(path, model, label2ans):
             new_answer_bias[label] = 0.
             unload += 1
     print("Loaded %d answers from LXRTQA pre-training and %d not" % (loaded, unload))
-    print()
     answer_state_dict['logit_fc.3.weight'] = new_answer_weight
     answer_state_dict['logit_fc.3.bias'] = new_answer_bias
 
     # Load Bert Weights
     bert_model_keys = set(model.lxrt_encoder.model.state_dict().keys())
     bert_loaded_keys = set(bert_state_dict.keys())
-    assert len(bert_model_keys - bert_loaded_keys) == 0
+    #assert len(bert_model_keys - bert_loaded_keys) == 0
     model.lxrt_encoder.model.load_state_dict(bert_state_dict, strict=False)
 
     # Load Answer Logic FC Weights

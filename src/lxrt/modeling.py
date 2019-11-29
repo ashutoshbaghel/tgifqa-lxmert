@@ -15,6 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """PyTorch LXRT model."""
+print(f"DELETING SOMETHING FROM SYS>PATH IN FILE {__name__}")
+import sys
+print(sys.path)
+sys.path = sys.path[:-1]
+print(sys.path)
 
 import copy
 import json
@@ -24,8 +29,8 @@ import os
 import shutil
 import tarfile
 import tempfile
-import sys
-from SlowFast.slowfast.models import model_builder
+
+from slowfast.models import model_builder
 from slowfast.config.defaults import get_cfg
 from io import open
 
@@ -37,8 +42,14 @@ from .file_utils import cached_path
 
 logger = logging.getLogger(__name__)
 
+print("#"*20)
+
+print(os.path.abspath(model_builder.__file__))
+print( os.path.dirname(model_builder.__file__))
+print("#"*20)
+
 cfg = get_cfg()
-cfg_file = "../SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
+cfg_file = "src/lxrt/SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
 cfg.merge_from_file(cfg_file)
 d = "cuda" if torch.cuda.is_available() else "cpu"
 PRETRAINED_MODEL_ARCHIVE_MAP = {
@@ -594,7 +605,7 @@ class LXRTEncoder(nn.Module):
         super().__init__()
 
         # abaghel added:
-        self.flag = True
+        self.flag = False
 
         # Obj-level image embedding layer
         self.visn_fc = VisualFeatEncoder(config)
@@ -614,17 +625,19 @@ class LXRTEncoder(nn.Module):
         self.x_layers = nn.ModuleList(
             [LXRTXLayer(config) for _ in range(self.num_x_layers)]
         )
-        self.r_layers = nn.ModuleList(
-            [BertLayer(config) for _ in range(self.num_r_layers)]
-        )
-        #self.r_layers = model_builder.build_model(cfg)
+        self.r_layers = model_builder.build_model(cfg)
+#         self.r_layers = nn.ModuleList(
+#             [BertLayer(config) for _ in range(self.num_r_layers)]
+#         )
 
     def forward(self, lang_feats, lang_attention_mask,
                 visn_feats, visn_attention_mask=None):
         # Run visual embedding layer
         # Note: Word embedding layer was executed outside this module.
         #       Keep this design to allow loading BERT weights.
-        visn_feats = self.visn_fc(visn_feats)
+        
+#         Removing for SlowFast
+#         visn_feats = self.visn_fc(visn_feats)
 
         if self.flag:
             print("Before running the language-encoders---> ")
@@ -641,9 +654,11 @@ class LXRTEncoder(nn.Module):
             print("Size of lang_feats= ", lang_feats.size())
 
         # Run relational layers
-        #visn_feats = self.r_layers(visn_feats, lang_feats)
-        for layer_module in self.r_layers:
-            visn_feats = layer_module(visn_feats, visn_attention_mask)
+        visn_feats = self.r_layers(visn_feats, lang_feats)
+#         visn_feats = self.r_layers(visn_feats)
+# #         Removing for SlowFast        
+#         for layer_module in self.r_layers:
+#             visn_feats = layer_module(visn_feats, visn_attention_mask)
 
         if self.flag:
             print("Before running the cross-modal layers---> ")
@@ -824,6 +839,7 @@ class BertPreTrainedModel(nn.Module):
             *inputs, **kwargs: additional input for the specific Bert class
                 (ex: num_labels for BertForSequenceClassification)
         """
+        print(">>>>>> " , pretrained_model_name_or_path)
         if pretrained_model_name_or_path in PRETRAINED_MODEL_ARCHIVE_MAP:
             archive_file = PRETRAINED_MODEL_ARCHIVE_MAP[pretrained_model_name_or_path]
         else:
@@ -923,12 +939,13 @@ class LXRTModel(BertPreTrainedModel):
     """LXRT Model."""
 
     def __init__(self, config):
+        print("Inside LXRTModel<Modelling")
         super().__init__(config)
         self.embeddings = BertEmbeddings(config)
         self.encoder = LXRTEncoder(config)
         self.pooler = BertPooler(config)
         self.apply(self.init_bert_weights)
-
+        print("End LXRTModel<Modelling")
     def forward(self, input_ids, token_type_ids=None, attention_mask=None,
                 visual_feats=None, visual_attention_mask=None):
         if attention_mask is None:

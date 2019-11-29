@@ -14,7 +14,7 @@ MAX_VQA_LENGTH = 20
 class VQAModel(nn.Module):
     def __init__(self, num_answers):
         super().__init__()
-
+        print(f"Making {__name__}")
         self.flag = True
         # Build LXRT encoder
         self.lxrt_encoder = LXRTEncoder(
@@ -31,6 +31,7 @@ class VQAModel(nn.Module):
             nn.Linear(hid_dim * 2, num_answers)
         )
         self.logit_fc.apply(self.lxrt_encoder.model.init_bert_weights)
+        print(f"Done {__name__}")
 
     def forward(self, feat, pos, sent):
         """
@@ -42,7 +43,8 @@ class VQAModel(nn.Module):
         :param leng: (b,) Type -- int numpy array
         :return: (b, num_answer) The logit of each answers.
         """
-        x = self.lxrt_encoder(sent, (feat, pos))
+#         x = self.lxrt_encoder(sent, (feat, pos))
+        x = self.lxrt_encoder(sent, feat)
         logit = self.logit_fc(x)
 
         if self.flag:

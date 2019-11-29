@@ -12,8 +12,8 @@ from param import args
 from utils import load_obj_tsv
 import os
 import csv
-import sys
-sys.path.insert(1, '../')
+#import sys
+#sys.path.insert(1, '../')
 # Load part of the dataset for fast checking.
 # Notice that here is the number of images instead of the number of data,
 # which means all related data to the images would be used.
@@ -30,11 +30,11 @@ from lxrt.SlowFast.slowfast.datasets.tgif_direct import TGIF
 
 
 cfg = get_cfg()
-cfg_file = "../lxrt/SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
+cfg_file = "src/lxrt/SlowFast/configs/Kinetics/c2/SLOWFAST_8x8_R50.yaml"
 cfg.merge_from_file(cfg_file)
 
 def assert_exists(path):
-	assert os.path.exists(path), 'Does not exist : {}'.format(path)
+    assert os.path.exists(path), 'Does not exist : {}'.format(path)
 
 class VQADataset:
     """
@@ -82,14 +82,14 @@ class VQADataset:
    options per GIF
    Repo looks like : 
    /lxmert/data/tgif/dataframe -> This contains GIF tensors and csv file
-   		/lxmert/data/tgif/dataframe/gif_tensors -> Contains GIF tensors
+        /lxmert/data/tgif/dataframe/gif_tensors -> Contains GIF tensors
 
    /lxmert/data/tgif/vocabulary -> This contains vocabulary, word2idx, ans2idx etc.
-   		/lxmert/data/tgif/vocabulary/word_matrix_<data_type>.pkl
-   		/lxmert/data/tgif/vocabulary/word_to_index_<data_type>.pkl
-   		/lxmert/data/tgif/vocabulary/index_to_word_<data_type>.pkl
-   		/lxmert/data/tgif/vocabulary/ans_to_index_<data_type>.pkl
-   		/lxmert/data/tgif/vocabulary/index_to_ans_<data_type>.pkl
+        /lxmert/data/tgif/vocabulary/word_matrix_<data_type>.pkl
+        /lxmert/data/tgif/vocabulary/word_to_index_<data_type>.pkl
+        /lxmert/data/tgif/vocabulary/index_to_word_<data_type>.pkl
+        /lxmert/data/tgif/vocabulary/ans_to_index_<data_type>.pkl
+        /lxmert/data/tgif/vocabulary/index_to_ans_<data_type>.pkl
 '''
 class TGIFDataset(Dataset):
     def __init__(self, dataset_name='train', data_type=None, dataframe_dir=None, vocab_dir=None):
@@ -112,15 +112,15 @@ class TGIFDataset(Dataset):
         self.get_gif_tensor = loader.__getitem__
         
     def __getitem__(self, i): # whats the argument for this
-    	gif_path = os.path.join(self.dataframe_dir, 'gif_tensors')
-    	#pick up ith gif_tensor
+        gif_path = os.path.join(self.dataframe_dir, 'gif_tensors')
+        #pick up ith gif_tensor
         #NOTE: gif_path is only the gif name, not the relative path
         # REturn value: tuple (slow frames, fast frames) where frame -> (t, 3, h, w)
         gif_tensor = self.get_gif_tensor(gif_path)
-    	return self.gif_tensor, self.questions[i], self.mc_options[i], self.answers[i]
+        return self.gif_tensor, self.questions[i], self.mc_options[i], self.answers[i]
 
     def header2idx(self):
-    	return {'gif_name':0,'question':1,'a1':2,'a2':3,'a3':4,'a4':5,'a5':6,'answer':7,'vid_id':8,'key':9}
+        return {'gif_name':0,'question':1,'a1':2,'a2':3,'a3':4,'a4':5,'a5':6,'answer':7,'vid_id':8,'key':9}
 
     def read_from_csvfile(self):
         assert self.data_type in ['TRANS', 'ACTION'] # ACTION just for starting, will be using TRANS finally
@@ -132,111 +132,22 @@ class TGIFDataset(Dataset):
 
             
             with open(os.path.join(self.dataframe_dir, 'Total_transition_question.csv')) as file:
-            	csv_reader = csv.reader(file, delimiter='\t')
-            	for row in csv_reader:
-            		self.total_q.append(row)
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    self.total_q.append(row)
 
         elif self.data_type=='ACTION':
-         	train_data_path = os.path.join(self.dataframe_dir, 'Train_action_question.csv')
+            train_data_path = os.path.join(self.dataframe_dir, 'Train_action_question.csv')
             test_data_path = os.path.join(self.dataframe_dir, 'Test_action_question.csv')
 
             with open(os.path.join(self.dataframe_dir, 'Total_action_question.csv')) as file:
-            	csv_reader = csv.reader(file, delimiter='\t')
-            	for row in csv_reader:
-            		self.total_q.append(row)
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    self.total_q.append(row)
         self.total_q.pop(0)
 
         assert_exists(train_data_path)
         assert_exits(test_data_path)
-
-        csv_data=[]
-        if self.dataset_name=='train':
-        	with open(train_data_path) as file:
-        		csv_reader = csv.reader(file, delimiter='\t')
-        		for row in csv_reader:
-        			csv_data.append(row)
-        elif self.dataset_name=='test':
-        	with open(test_data_path) as file:
-        		csv_reader = csv.reader(file, delimiter='\t')
-        		for row in csv_reader:
-        			csv_data.append(row)
-        csv_data.pop(0)
-
-        return np.asarray(csv_data)
-    '''
-    def build_vocabulary(self):
-
-    def load_vocabulary(self):
-    	word_matrix_path = os.path.join(self.vocab_dir, 'word_matrix_%s.pkl'%self.data_type)
-    	word2idx_path = os.path.join(self.vocab_dir, 'word_to_index_%s.pkl'%self.data_type)
-    	idx2word_path = os.path.join(self.vocab_dir, 'index_to_word_%s.pkl'%self.data_type)
-    	ans2idx_path = os.path.join(self.vocab_dir, 'ans_to_index_%s.pkl'%self.data_type)
-    	idx2ans_path = os.path.join(self.vocab_dir, 'index_to_ans_%s.pkl'%self.data_type)
-
-    	if not os.path.exists(word_matrix_path) and os.path.exists(word2idx_path) and \
-    			os.path.exists(idx2word_path) and os.path.exists(ans2idx_path) and \
-    			os.path.exists(idx2ans_path):
-    			build_vocabulary()
-	'''
-
-
-
-
-"""
-An example in obj36 tsv:
-FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
-              "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
-FIELDNAMES would be keys in the dict returned by load_obj_tsv.
-"""
-
-class FrameQADataset(object):
-    def __init__(self, dataset_name='train', data_type=None, dataframe_dir=None, vocab_dir=None):
-        self.dataframe_dir = dataframe_dir # of the form data/tgif/vocabulary
-        self.vocab_dir = vocab_dir # of the form data/tgif/dataframe
-        self.data_type = data_type # 'TRANS'
-        self.dataset_name = dataset_name # 'train' or 'val' or 'test'
-
-        self.csv = self.read_from_csvfile("frameqa")
-        self.header2idx = self.header2idx()
-        self.gif_names = self.csv[:,self.header2idx['gif_name']]
-        self.gif_tensor = None
-        self.questions = self.csv[:,self.header2idx['question']]
-        self.answer = self.csv[:,self.header2idx['answer']]
-        self._build_ans_vocab()
-        ## GIF LOADER ##
-        ## NOTE: May have to change the relative path of gif dir as 
-        ## an extra argument to TGIF class init
-        loader  = TGIF(cfg, "train")
-        self.get_gif_tensor = loader.__getitem__
-        
-    def _build_ans_vocab(self):
-        vocab = set()
-        for ans in self.answer:
-            vocab.add(str(ans))
-        self.vocab = sorted(list(vocab))
-        self.id2ans = self.vocab
-        self.ans2id = dict(zip(self.vocab, np.arange(len(self.vocab))))
-        self.vocab_len = len(self.vocab)
-        
-    def __getitem__(self, i): # whats the argument for this
-        gif_path = self.gif_names[i]
-        #pick up ith gif_tensor
-        #NOTE: gif_path is only the gif name, not the relative path
-        # REturn value: tuple (slow frames, fast frames) where frame -> (t, 3, h, w)
-        gif_tensor = self.get_gif_tensor(gif_path)
-        
-        return gif_tensor, self.questions[i], self.ans2id[self.answer[i]]
-
-    def __len__(self):
-        return len(self.questions)
-    
-    def header2idx(self):
-        return {'gif_name':0,'question':1,'answer':2}
-
-    def read_from_csvfile(self, category=None):
-        print(category)
-        train_data_path = os.path.join(self.dataframe_dir, 'Train_'+category+'_question.csv')
-        test_data_path = os.path.join(self.dataframe_dir, 'Test_'+category+'_question.csv')
 
         csv_data=[]
         if self.dataset_name=='train':
@@ -252,7 +163,118 @@ class FrameQADataset(object):
         csv_data.pop(0)
 
         return np.asarray(csv_data)
+    '''
+    def build_vocabulary(self):
 
+    def load_vocabulary(self):
+        word_matrix_path = os.path.join(self.vocab_dir, 'word_matrix_%s.pkl'%self.data_type)
+        word2idx_path = os.path.join(self.vocab_dir, 'word_to_index_%s.pkl'%self.data_type)
+        idx2word_path = os.path.join(self.vocab_dir, 'index_to_word_%s.pkl'%self.data_type)
+        ans2idx_path = os.path.join(self.vocab_dir, 'ans_to_index_%s.pkl'%self.data_type)
+        idx2ans_path = os.path.join(self.vocab_dir, 'index_to_ans_%s.pkl'%self.data_type)
+
+        if not os.path.exists(word_matrix_path) and os.path.exists(word2idx_path) and \
+                os.path.exists(idx2word_path) and os.path.exists(ans2idx_path) and \
+                os.path.exists(idx2ans_path):
+                build_vocabulary()
+    '''
+
+
+
+
+"""
+An example in obj36 tsv:
+FIELDNAMES = ["img_id", "img_h", "img_w", "objects_id", "objects_conf",
+              "attrs_id", "attrs_conf", "num_boxes", "boxes", "features"]
+FIELDNAMES would be keys in the dict returned by load_obj_tsv.
+"""
+
+class FrameQADataset(object):
+    def __init__(self, dataset_name='train', data_type=None, dataframe_dir=None, vocab_dir=None, category ="frameqa" ):
+        self.dataframe_dir = dataframe_dir # of the form data/tgif/vocabulary
+        self.vocab_dir = vocab_dir # of the form data/tgif/dataframe
+        self.data_type = data_type # 'TRANS'
+        self.dataset_name = dataset_name # 'train' or 'val' or 'test'
+
+        self.csv, all_data = self.read_from_csvfile(category)
+        self.header2idx = self.header2idx()
+        self.gif_names = self.csv[:,self.header2idx['gif_name']]
+        self.gif_tensor = None
+        self.questions = self.csv[:,self.header2idx['question']]
+        self.answer = self.csv[:,self.header2idx['answer']]
+        self._build_ans_vocab(all_data[:,self.header2idx['answer']])
+        ## GIF LOADER ##
+        ## NOTE: May have to change the relative path of gif dir as 
+        ## an extra argument to TGIF class init
+        root_path = "/users/cdwivedi/RL_EXP/IDL/project/tgif-qa/code/dataset/tgif/frame_gifs/"+dataset_name+"/"
+        loader  = TGIF(cfg, "train",root_path=root_path )
+        self.get_gif_tensor = loader.__getitem__
+        self.check_gif = loader.check_gif
+        
+    def _build_ans_vocab(self, all_answers):
+        vocab = set()
+        for ans in all_answers:
+            vocab.add(str(ans))
+        self.vocab = sorted(list(vocab))
+        self.id2ans = self.vocab
+        self.ans2id = dict(zip(self.vocab, np.arange(len(self.vocab))))
+        self.vocab_len = len(self.vocab)
+        self.num_answers = self.vocab_len
+        self.label2ans = self.id2ans
+        
+    def get_one_hot(self, i):
+        vec = np.zeros(self.vocab_len)
+        vec[i] = 1
+        return vec
+        
+    def __getitem__(self, i): # whats the argument for this
+        gif_path = self.gif_names[i]
+        #pick up ith gif_tensor
+        #NOTE: gif_path is only the gif name, not the relative path
+        # REturn value: tuple (slow frames, fast frames) where frame -> (t, 3, h, w)
+        patience = 10
+        counter = 0
+        while(counter < patience):
+            if self.check_gif(gif_path):
+                gif_tensor = self.get_gif_tensor(gif_path)
+                break
+            else:
+                counter += 1
+                i = np.random.choice(self.__len__())
+                gif_path = self.gif_names[i]
+        return gif_tensor[0], gif_tensor[1], self.questions[i], self.get_one_hot(self.ans2id[self.answer[i]])
+
+    def __len__(self):
+        return len(self.questions)
+    
+    def header2idx(self):
+        return {'gif_name':0,'question':1,'answer':2}
+
+    def read_from_csvfile(self, category=None):
+        print(category)
+        train_data_path = os.path.join(self.dataframe_dir, 'Train_'+category+'_question.csv')
+        test_data_path = os.path.join(self.dataframe_dir, 'Test_'+category+'_question.csv')
+        total_data_path = os.path.join(self.dataframe_dir, 'Total_'+category+'_question.csv')
+        csv_data=[]
+        if self.dataset_name=='train':
+            with open(train_data_path) as file:
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    csv_data.append(row)
+        elif self.dataset_name=='test':
+            with open(test_data_path) as file:
+                csv_reader = csv.reader(file, delimiter='\t')
+                for row in csv_reader:
+                    csv_data.append(row)
+        csv_data.pop(0)
+        total_csv_data=[]
+        with open(total_data_path) as file:
+            csv_reader = csv.reader(file, delimiter='\t')
+            for row in csv_reader:
+                total_csv_data.append(row)
+
+        total_csv_data.pop(0)
+        return np.asarray(csv_data), np.asarray(total_csv_data)
 
 
 class VQATorchDataset(Dataset):

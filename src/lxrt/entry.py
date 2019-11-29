@@ -80,6 +80,7 @@ def set_visual_config(args):
 class LXRTEncoder(nn.Module):
     def __init__(self, args, max_seq_length, mode='x'):
         super().__init__()
+        print(f"Making {__name__}")
         self.max_seq_length = max_seq_length
         set_visual_config(args)
 
@@ -88,16 +89,17 @@ class LXRTEncoder(nn.Module):
             "bert-base-uncased",
             do_lower_case=True
         )
-
+        print("Made Tokenizer")
         # Build LXRT Model
         self.model = VisualBertForLXRFeature.from_pretrained(
             "bert-base-uncased",
             mode=mode
         )
-
+        print("Made VisualBertForLXRFeature")
         if args.from_scratch:
             print("initializing all the weights")
             self.model.apply(self.model.init_bert_weights)
+        print(f"Done {__name__}")
 
     def multi_gpu(self):
         self.model = nn.DataParallel(self.model)

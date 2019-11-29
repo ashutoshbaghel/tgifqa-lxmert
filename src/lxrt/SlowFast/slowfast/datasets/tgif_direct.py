@@ -145,7 +145,7 @@ class TGIF(torch.utils.data.Dataset):
     
     def getFrames(self, path, max_frames = 32, img_h = 256, img_w = 256):
         path = path.split(".")[0] + ".gi"
-        print(self.data_root + path +"/*")
+        #print(self.data_root + path +"/*")
         files = glob.glob(self.data_root + path +"/*")
         frame_idx = torch.arange(len(files), requires_grad=False)
         start_idx, end_idx= 0, len(frame_idx)
@@ -163,6 +163,10 @@ class TGIF(torch.utils.data.Dataset):
         frames = torch.cat(frames, dim=0)
         return frames
     
+    def check_gif(self, path):
+        path = self.data_root + path.split(".")[0] + ".gi"
+        return os.path.isdir(path)
+
     def __getitem__(self, path, index = 0):
         """
         Given the video index, return the list of frames, label, and video
@@ -212,9 +216,14 @@ class TGIF(torch.utils.data.Dataset):
         # decoded, repeatly find a random video replacement that can be decoded.
         for _ in range(self._num_retries):
             try:
-                frames = self.getFrames(self._path_to_videos[index])
+                frames = self.getFrames(path)
             except Exception as e:
                 logger.info(
+                    "Failed to load video from {} with error {}".format(
+                        self._path_to_videos[index], e
+                    )
+                )
+                print(
                     "Failed to load video from {} with error {}".format(
                         self._path_to_videos[index], e
                     )
@@ -237,9 +246,9 @@ class TGIF(torch.utils.data.Dataset):
 
             # If decoding failed (wrong format, video is too short, and etc),
             # select another video.
-            if frames is None:
-                index = random.randint(0, len(self._path_to_videos) - 1)
-                continue
+            #if frames is None:
+            #    index = random.randint(0, len(self._path_to_videos) - 1)
+            #    continue
 
             # Perform color normalization.
             frames = frames.float()
@@ -260,7 +269,7 @@ class TGIF(torch.utils.data.Dataset):
             label = self._labels[index]
             frames = self.pack_pathway_output(frames)
             print(np.shape(frames[0]), np.shape(frames[1]))
-            return frames
+            return torch.tensor(frames[0]), torch.tensor(frames[1])
         else:
             raise RuntimeError(
                 "Failed to fetch video after {} retries.".format(

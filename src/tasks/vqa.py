@@ -3,7 +3,7 @@
 
 import os
 import collections
-
+import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
@@ -12,40 +12,56 @@ from tqdm import tqdm
 from param import args
 from pretrain.qa_answer_table import load_lxmert_qa
 from tasks.vqa_model import VQAModel
-from tasks.vqa_data import VQADataset, VQATorchDataset, VQAEvaluator
+from tasks.vqa_data import VQADataset, VQATorchDataset, VQAEvaluator, FrameQADataset
 
 DataTuple = collections.namedtuple("DataTuple", 'dataset loader evaluator')
+from logger_utils import logger as log
+logger = log("TEST1")
 
+# def get_data_tuple(splits: str, bs:int, shuffle=False, drop_last=False) -> DataTuple:
+#     dset = 7(splits)
+#     tset = VQATorchDataset(dset)
+#     evaluator = VQAEvaluator(dset)
+#     data_loader = DataLoader(
+#         tset, batch_size=bs,
+#         shuffle=shuffle, num_workers=args.num_workers,
+#         drop_last=drop_last, pin_memory=True
+#     )
 
-def get_data_tuple(splits: str, bs:int, shuffle=False, drop_last=False) -> DataTuple:
-    dset = VQADataset(splits)
-    tset = VQATorchDataset(dset)
-    evaluator = VQAEvaluator(dset)
+#     return DataTuple(dataset=dset, loader=data_loader, evaluator=evaluator)
+
+def get_data_tuple(args_train, bs=32,shuffle=False, drop_last=False) -> DataTuple:
+    dset = FrameQADataset(dataframe_dir="../../tgif-qa/dataset/", \
+                          dataset_name="test")
     data_loader = DataLoader(
-        tset, batch_size=bs,
+        dset, batch_size=bs,
         shuffle=shuffle, num_workers=args.num_workers,
         drop_last=drop_last, pin_memory=True
     )
-
-    return DataTuple(dataset=dset, loader=data_loader, evaluator=evaluator)
+    return DataTuple(dataset=dset, loader=data_loader, evaluator=None)
 
 
 class VQA:
     def __init__(self):
         # Datasets
+        print("Fetching data")
         self.train_tuple = get_data_tuple(
             args.train, bs=args.batch_size, shuffle=True, drop_last=True
         )
+        print("Got data")
         if args.valid != "":
             self.valid_tuple = get_data_tuple(
-                args.valid, bs=1024,
+                args.valid, bs=8,
                 shuffle=False, drop_last=False
             )
         else:
             self.valid_tuple = None
+        print("Got data")
         
         # Model
+        print("Making model")
         self.model = VQAModel(self.train_tuple.dataset.num_answers)
+        print("Ready model")
         # Print model info:
         print("Num of answers:")
         print(self.train_tuple.dataset.num_answers)
@@ -90,33 +106,47 @@ class VQA:
         flag = True
         for epoch in range(args.epochs):
             quesid2ans = {}
-            for i, (ques_id, feats, boxes, sent, target) in iter_wrapper(enumerate(loader)):
-
+            correct = 0
+            total_loss = 0
+            print("Len of the dataloader: ", len(loader))
+#             Our new TGIFQA-Dataset returns:
+#             return gif_tensor, self.questions[i], self.ans2id[self.answer[i]]
+            for i, (feats1, feats2, sent, target) in iter_wrapper(enumerate(loader)):
+                ques_id, boxes = -1, None
                 self.model.train()
                 self.optim.zero_grad()
 
-                feats, boxes, target = feats.cuda(), boxes.cuda(), target.cuda()
-                if flag:
-                    print("Training is done on these variables from datalaoder:")
-                    print("feats: ", feats.size())
-                    print("boxes: ", boxes.size())
-                    print("target: ", target.size())
-                    flag = False
+                
+                feats1, feats2, target = feats1.cuda(), feats2.cuda(), target.cuda()
+                feats = [feats1, feats2]
+                
                 logit = self.model(feats, boxes, sent)
                 assert logit.dim() == target.dim() == 2
                 loss = self.bce_loss(logit, target)
                 loss = loss * logit.size(1)
-
+        
+                total_loss += loss.item()
+                
                 loss.backward()
                 nn.utils.clip_grad_norm_(self.model.parameters(), 5.)
                 self.optim.step()
 
                 score, label = logit.max(1)
-                for qid, l in zip(ques_id, label.cpu().numpy()):
-                    ans = dset.label2ans[l]
-                    quesid2ans[qid.item()] = ans
-
-            log_str = "\nEpoch %d: Train %0.2f\n" % (epoch, evaluator.evaluate(quesid2ans) * 100.)
+                score_t, target = target.max(1)
+                
+                correct += (label == target).sum().cpu().numpy()
+                if epoch > 4:
+                    for l,s,t in zip(label, sent, target):
+                        print(l)
+                        print(s)
+                        print("Prediction", loader.dataset.label2ans[int(l.cpu().numpy())])
+                        print("Answer", loader.dataset.label2ans[int(t.cpu().numpy())])
+            logger.log(total_loss/len(loader), correct/len(loader)*100, epoch)
+            print("=="*30)
+            print("Accuracy = " , correct/len(loader)*100)
+            print("Loss =" , total_loss/len(loader))
+            print("=="*30)
+#             log_str = "\nEpoch %d: Train %0.2f\n" % (epoch, evaluator.evaluate(quesid2ans) * 100.)
 
             if self.valid_tuple is not None:  # Do Validation
                 valid_score = self.evaluate(eval_tuple)
@@ -186,9 +216,13 @@ class VQA:
 
 
 if __name__ == "__main__":
+    print("Inside main")
+    print(os. environ['PYTHONPATH'])
     # Build Class
     vqa = VQA()
-
+#     print(vqa.model)
+#     print("*****************\n"*10)
+    print("Back to main()")
     # Load VQA model weights
     # Note: It is different from loading LXMERT pre-trained weights.
     if args.load is not None:
@@ -196,6 +230,7 @@ if __name__ == "__main__":
 
     # Test or Train
     if args.test is not None:
+        print("Inside test loop")
         args.fast = args.tiny = False       # Always loading all data in test
         if 'test' in args.test:
             vqa.predict(
@@ -215,10 +250,12 @@ if __name__ == "__main__":
         else:
             assert False, "No such test option for %s" % args.test
     else:
-        print('Splits in Train data:', vqa.train_tuple.dataset.splits)
+        print("Inside train condition")
+#         print('Splits in Train data:', vqa.train_tuple.dataset.splits)
         if vqa.valid_tuple is not None:
-            print('Splits in Valid data:', vqa.valid_tuple.dataset.splits)
-            print("Valid Oracle: %0.2f" % (vqa.oracle_score(vqa.valid_tuple) * 100))
+#             print('Splits in Valid data:', vqa.valid_tuple.dataset.splits)
+            pass
+#             print("Valid Oracle: %0.2f" % (vqa.oracle_score(vqa.valid_tuple) * 100))
         else:
             print("DO NOT USE VALIDATION")
         vqa.train(vqa.train_tuple, vqa.valid_tuple)

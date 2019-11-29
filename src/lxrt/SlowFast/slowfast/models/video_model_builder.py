@@ -156,6 +156,7 @@ class SlowFastModel(nn.Module):
             cfg (CfgNode): model building configs, details are in the
                 comments of the config file.
         """
+        
         assert cfg.MODEL.ARCH in _POOL1.keys()
         pool_size = _POOL1[cfg.MODEL.ARCH]
         assert len({len(pool_size), self.num_pathways}) == 1
@@ -375,6 +376,7 @@ class ResNetModel(nn.Module):
             cfg (CfgNode): model building configs, details are in the
                 comments of the config file.
         """
+        
         super(ResNetModel, self).__init__()
         self.num_pathways = 1
         self._construct_network(cfg)

@@ -23,13 +23,13 @@ def build_model(cfg):
         cfg (configs): configs that contains the hyper-parameters to build the
         backbone. Details can be seen in slowfast/config/defaults.py.
     """
+
     assert (
         cfg.MODEL.ARCH in _MODEL_TYPES.keys()
     ), "Model type '{}' not supported".format(cfg.MODEL.ARCH)
     assert (
         cfg.NUM_GPUS <= torch.cuda.device_count()
     ), "Cannot use more GPU devices than available"
-
     # Construct the model
     model = _MODEL_TYPES[cfg.MODEL.ARCH](cfg)
     # Determine the GPU used by the current process
