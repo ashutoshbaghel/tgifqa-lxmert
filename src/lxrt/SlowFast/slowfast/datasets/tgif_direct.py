@@ -268,7 +268,6 @@ class TGIF(torch.utils.data.Dataset):
 
             label = self._labels[index]
             frames = self.pack_pathway_output(frames)
-            print(np.shape(frames[0]), np.shape(frames[1]))
             return torch.tensor(frames[0]), torch.tensor(frames[1])
         else:
             raise RuntimeError(
