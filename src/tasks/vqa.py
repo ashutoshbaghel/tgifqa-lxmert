@@ -16,7 +16,7 @@ from tasks.vqa_data import VQADataset, VQATorchDataset, VQAEvaluator, FrameQADat
 
 DataTuple = collections.namedtuple("DataTuple", 'dataset loader evaluator')
 from logger_utils import logger as log
-logger = log("TEST1")
+logger = log("TEST-check") # for 
 
 # def get_data_tuple(splits: str, bs:int, shuffle=False, drop_last=False) -> DataTuple:
 #     dset = 7(splits)
@@ -137,13 +137,13 @@ class VQA:
                 score_t, target = target.max(1)
                 correct += (label == target).sum().cpu().numpy()
                 total += len(label)
-                if epoch > 4:
+                if epoch > -1:
                     for l,s,t in zip(label, sent, target):
                         print(l)
                         print(s)
                         print("Prediction", loader.dataset.label2ans[int(l.cpu().numpy())])
                         print("Answer", loader.dataset.label2ans[int(t.cpu().numpy())])
-            logger.log(total_loss/len(loader), correct/len(loader)*100, epoch)
+            logger.log(total_loss/total, correct/total*100, epoch)
             print("=="*30)
             print("Accuracy = " , correct/total*100)
             print("Loss =" , total_loss/total)
@@ -165,7 +165,7 @@ class VQA:
 #                 f.write(log_str)
 #                 f.flush()
 
-            self.save(str(epoch))
+            self.save("Check"+str(epoch))
 
     def predict(self, eval_tuple: DataTuple, dump=None):
         """
@@ -223,7 +223,9 @@ if __name__ == "__main__":
     # Build Class
     vqa = VQA()
     
+    #rest of the model
     for param in vqa.model.parameters():
+        print(param)
         param.requires_grad = False
         
     for param in vqa.model.lxrt_encoder.model.bert.encoder.r_layers.cnn_bridge.parameters():

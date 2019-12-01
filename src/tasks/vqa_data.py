@@ -245,7 +245,7 @@ class FrameQADataset(object):
         return gif_tensor[0], gif_tensor[1], self.questions[i], self.get_one_hot(self.ans2id[self.answer[i]])
 
     def __len__(self):
-        return len(self.questions)
+        return 300#len(self.questions)
     
     def header2idx(self):
         return {'gif_name':0,'question':1,'answer':2}
