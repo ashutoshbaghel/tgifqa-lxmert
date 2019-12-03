@@ -206,8 +206,8 @@ class FrameQADataset(object):
         ## GIF LOADER ##
         ## NOTE: May have to change the relative path of gif dir as 
         ## an extra argument to TGIF class init
-        root_path = "/users/cdwivedi/RL_EXP/IDL/project/tgif-qa/code/dataset/tgif/frame_gifs/"+dataset_name+"/"
-        loader  = TGIF(cfg, "train",root_path=root_path )
+        self.root_path = "/users/cdwivedi/RL_EXP/IDL/project/tgif-qa/code/dataset/tgif/frame_gifs/"+dataset_name+"/"
+        loader  = TGIF(cfg, dataset_name,root_path=self.root_path )
         self.get_gif_tensor = loader.__getitem__
         self.check_gif = loader.check_gif
         
@@ -245,7 +245,7 @@ class FrameQADataset(object):
         return gif_tensor[0], gif_tensor[1], self.questions[i], self.get_one_hot(self.ans2id[self.answer[i]])
 
     def __len__(self):
-        return 300#len(self.questions)
+        return len(self.questions)//2
     
     def header2idx(self):
         return {'gif_name':0,'question':1,'answer':2}

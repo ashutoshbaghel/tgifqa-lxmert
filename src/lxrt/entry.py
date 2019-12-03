@@ -78,7 +78,7 @@ def set_visual_config(args):
 
 
 class LXRTEncoder(nn.Module):
-    def __init__(self, args, max_seq_length, mode='x'):
+    def __init__(self, args, max_seq_length, mode='x', attention=False):
         super().__init__()
         print(f"Making {__name__}")
         self.max_seq_length = max_seq_length
@@ -93,7 +93,8 @@ class LXRTEncoder(nn.Module):
         # Build LXRT Model
         self.model = VisualBertForLXRFeature.from_pretrained(
             "bert-base-uncased",
-            mode=mode
+            mode=mode, 
+            attention=attention
         )
         print("Made VisualBertForLXRFeature")
         if args.from_scratch:

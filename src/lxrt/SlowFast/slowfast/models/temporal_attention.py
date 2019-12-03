@@ -100,7 +100,6 @@ class TX(nn.Module):
         self.ff = FeedForward(d_model, d_ff=d_model//2)
     def forward(self, q, k, v, mask=None):
         # q: (b , dim )
-        print("int tx: ", [np.shape(_) for _ in [q,k,v]])
         b = q.size(0)
         t = k.size(1)
         dim = q.size(1)
@@ -122,11 +121,8 @@ class Block_head(nn.Module):
         self.T3 = TX(d_model, dropout)
     def forward(self, q, k, v, mask=None):
         q = self.T1(q,k,v)
-        print("q1: ", np.shape(q))
-        q = self.T2(q,k,v)
-        print("q2: ", np.shape(q))
-        q = self.T3(q,k,v)
-        print("q3: ", np.shape(q))
+        #q = self.T2(q,k,v)
+        #q = self.T3(q,k,v)
         return q
 
 
@@ -158,7 +154,7 @@ class Tail(nn.Module):
 
         self.list_layers = nn.ModuleList(self.head_layers)
         self.classifier = nn.Sequential(nn.Linear(self.d_model, num_classes),
-                                        nn.Softmax(dim=-1))
+                                        )
         # resnet style initialization 
         nn.init.kaiming_normal(self.Qpr[0].weight, mode='fan_out')
         nn.init.kaiming_normal(self.Qpr[3].weight, mode='fan_out')
@@ -167,7 +163,7 @@ class Tail(nn.Module):
         
         nn.init.constant(self.bn1.weight , 1)
         nn.init.constant(self.bn1.bias , 0)
-        
+        self.softmax = nn.Softmax(dim=-1)
     def forward(self, x, b , t , query):
         x = self.bn1(x)
         # stabilizes the learning
@@ -199,15 +195,17 @@ class Tail(nn.Module):
         f = F.normalize(f, p=2, dim=1)
        
         y = self.classifier(f)
+        y = y.contiguous().view(b,t,-1)
+        y = self.softmax(y)
+        target_frames = y.size(2)
+        y = y.contiguous().view(b,target_frames*t)
         return y, f
 
 
-# Tail is the main transormer network 
 class Temporal_Transformer(nn.Module):
     def __init__(self, num_classes, num_frames,num_features, query_size, num_head ):
         super(Temporal_Transformer, self).__init__()
         
-        #self.base = nn.Sequential(*list(resnet50.children())[:-2]) ##SLOW FAST HERE ##
         self.tail = Tail(num_classes, num_frames,num_features, query_size, num_head )
         self.query_projection = nn.Linear(768, 50)
         self.query_act = nn.ReLU()
@@ -220,5 +218,6 @@ class Temporal_Transformer(nn.Module):
         query = self.query_act(self.query_projection(query))
         
         return self.tail(x, b , t, query )
+        
         
         

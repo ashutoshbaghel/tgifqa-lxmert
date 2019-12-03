@@ -16,7 +16,7 @@ _MODEL_TYPES = {
 }
 
 
-def build_model(cfg):
+def build_model(cfg, attention=False):
     """
     Builds the video model.
     Args:
@@ -31,7 +31,7 @@ def build_model(cfg):
         cfg.NUM_GPUS <= torch.cuda.device_count()
     ), "Cannot use more GPU devices than available"
     # Construct the model
-    model = _MODEL_TYPES[cfg.MODEL.ARCH](cfg)
+    model = _MODEL_TYPES[cfg.MODEL.ARCH](cfg, attention)
     # Determine the GPU used by the current process
     cur_device = torch.cuda.current_device()
     # Transfer the model to the current GPU device

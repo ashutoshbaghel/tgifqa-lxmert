@@ -17,9 +17,9 @@
 """PyTorch LXRT model."""
 print(f"DELETING SOMETHING FROM SYS>PATH IN FILE {__name__}")
 import sys
-print(sys.path)
+#print(sys.path)
 sys.path = sys.path[:-1]
-print(sys.path)
+#print(sys.path)
 
 import copy
 import json
@@ -601,7 +601,7 @@ class VisualFeatEncoder(nn.Module):
 
 
 class LXRTEncoder(nn.Module):
-    def __init__(self, config):
+    def __init__(self, config, attention=False):
         super().__init__()
 
         # abaghel added:
@@ -625,7 +625,11 @@ class LXRTEncoder(nn.Module):
         self.x_layers = nn.ModuleList(
             [LXRTXLayer(config) for _ in range(self.num_x_layers)]
         )
-        self.r_layers = model_builder.build_model(cfg)
+        
+        # SWAP: Include for running our Model
+        self.r_layers = model_builder.build_model(cfg, attention)
+
+        # SWAP: Include for running our og lxmert
 #         self.r_layers = nn.ModuleList(
 #             [BertLayer(config) for _ in range(self.num_r_layers)]
 #         )
@@ -636,8 +640,8 @@ class LXRTEncoder(nn.Module):
         # Note: Word embedding layer was executed outside this module.
         #       Keep this design to allow loading BERT weights.
         
-#         Removing for SlowFast
-#         visn_feats = self.visn_fc(visn_feats)
+        #SWAP: Include when running og lxmert
+        #visn_feats = self.visn_fc(visn_feats)
 
         if self.flag:
             print("Before running the language-encoders---> ")
@@ -652,11 +656,12 @@ class LXRTEncoder(nn.Module):
             print("Before running the visual-encoders---> ")
             print("Size of visn_feats= ", visn_feats.size())
             print("Size of lang_feats= ", lang_feats.size())
-
-        # Run relational layers
+            
+        #SWAP: Include when running our Model
         visn_feats = self.r_layers(visn_feats, lang_feats)
+
+        #SWAP: Include when running og lxmert
 #         visn_feats = self.r_layers(visn_feats)
-# #         Removing for SlowFast        
 #         for layer_module in self.r_layers:
 #             visn_feats = layer_module(visn_feats, visn_attention_mask)
 
@@ -938,14 +943,12 @@ class BertPreTrainedModel(nn.Module):
 class LXRTModel(BertPreTrainedModel):
     """LXRT Model."""
 
-    def __init__(self, config):
-        print("Inside LXRTModel<Modelling")
+    def __init__(self, config, attention=False):
         super().__init__(config)
         self.embeddings = BertEmbeddings(config)
-        self.encoder = LXRTEncoder(config)
+        self.encoder = LXRTEncoder(config, attention)
         self.pooler = BertPooler(config)
         self.apply(self.init_bert_weights)
-        print("End LXRTModel<Modelling")
     def forward(self, input_ids, token_type_ids=None, attention_mask=None,
                 visual_feats=None, visual_attention_mask=None):
         if attention_mask is None:
@@ -1097,14 +1100,14 @@ class LXRTFeatureExtraction(BertPreTrainedModel):
     """
     BERT model for classification.
     """
-    def __init__(self, config, mode='lxr'):
+    def __init__(self, config, mode='lxr', attention=False):
         """
 
         :param config:
         :param mode:  Number of visual layers
         """
-        super().__init__(config)
-        self.bert = LXRTModel(config)
+        super().__init__(config, attention=False)
+        self.bert = LXRTModel(config, attention)
         self.mode = mode
         self.apply(self.init_bert_weights)
 

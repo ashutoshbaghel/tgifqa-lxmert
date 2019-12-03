@@ -16,7 +16,7 @@ from tasks.vqa_data import VQADataset, VQATorchDataset, VQAEvaluator, FrameQADat
 
 DataTuple = collections.namedtuple("DataTuple", 'dataset loader evaluator')
 from logger_utils import logger as log
-logger = log("TEST-check") # for 
+logger = log("WithAttention") 
 
 # def get_data_tuple(splits: str, bs:int, shuffle=False, drop_last=False) -> DataTuple:
 #     dset = 7(splits)
@@ -30,9 +30,9 @@ logger = log("TEST-check") # for
 
 #     return DataTuple(dataset=dset, loader=data_loader, evaluator=evaluator)
 
-def get_data_tuple(args_train, bs=32,shuffle=False, drop_last=False) -> DataTuple:
+def get_data_tuple(args_train, bs=32,shuffle=False, drop_last=False, dataset_name="test") -> DataTuple:
     dset = FrameQADataset(dataframe_dir="../../tgif-qa/dataset/", \
-                          dataset_name="test")
+                          dataset_name=dataset_name)
     num_workers = 8
     data_loader = DataLoader(
         dset, batch_size=bs,
@@ -43,25 +43,27 @@ def get_data_tuple(args_train, bs=32,shuffle=False, drop_last=False) -> DataTupl
 
 
 class VQA:
-    def __init__(self):
+    def __init__(self, attention=False):
         # Datasets
         print("Fetching data")
         self.train_tuple = get_data_tuple(
-            args.train, bs=args.batch_size, shuffle=True, drop_last=True
+            args.train, bs=args.batch_size, shuffle=True, drop_last=True, dataset_name ="test"
         )
         print("Got data")
+        print("fetching val data")
         if args.valid != "":
             self.valid_tuple = get_data_tuple(
-                args.valid, bs=8,
-                shuffle=False, drop_last=False
+                args.valid, bs=args.batch_size,
+                shuffle=False, drop_last=False, dataset_name="test"
             )
+            print("got data")
         else:
             self.valid_tuple = None
         print("Got data")
         
         # Model
         print("Making model")
-        self.model = VQAModel(self.train_tuple.dataset.num_answers)
+        self.model = VQAModel(self.train_tuple.dataset.num_answers, attention)
         print("Ready model")
         # Print model info:
         print("Num of answers:")
@@ -100,6 +102,7 @@ class VQA:
         os.makedirs(self.output, exist_ok=True)
 
     def train(self, train_tuple, eval_tuple):
+        log_freq = 810
         dset, loader, evaluator = train_tuple
         iter_wrapper = (lambda x: tqdm(x, total=len(loader))) if args.tqdm else (lambda x: x)
 
@@ -137,13 +140,25 @@ class VQA:
                 score_t, target = target.max(1)
                 correct += (label == target).sum().cpu().numpy()
                 total += len(label)
-                if epoch > -1:
+                #if epoch > -1:
+                    #for l,s,t in zip(label, sent, target):
+                    #    print(l)
+                    #    print(s)
+                    #    print("Prediction", loader.dataset.label2ans[int(l.cpu().numpy())])
+                    #    print("Answer", loader.dataset.label2ans[int(t.cpu().numpy())])
+                
+                if  i % log_freq == 1 and i > 1:
+                    results=[]
                     for l,s,t in zip(label, sent, target):
-                        print(l)
-                        print(s)
-                        print("Prediction", loader.dataset.label2ans[int(l.cpu().numpy())])
-                        print("Answer", loader.dataset.label2ans[int(t.cpu().numpy())])
-            logger.log(total_loss/total, correct/total*100, epoch)
+                        result = []
+                        result.append(s)
+                        result.append("Prediction: {}".format(loader.dataset.label2ans[int(l.cpu().numpy())]))
+                        result.append("Answer: {}".format(loader.dataset.label2ans[int(t.cpu().numpy())]))
+                        results.append(result)
+                        torch.cuda.empty_cache()
+                    val_loss, val_acc, val_results = self.val(eval_tuple)
+                    logger.log(total_loss/total, correct/total*100, val_loss, val_acc, epoch, results,val_results )
+                    
             print("=="*30)
             print("Accuracy = " , correct/total*100)
             print("Loss =" , total_loss/total)
@@ -166,7 +181,48 @@ class VQA:
 #                 f.flush()
 
             self.save("Check"+str(epoch))
+    def val(self, eval_tuple):
+        dset, loader, evaluator = eval_tuple
+        iter_wrapper = (lambda x: tqdm(x, total=len(loader))) if args.tqdm else (lambda x: x)
+        self.model.eval()
+        best_valid = 0.
+        flag = True
+        quesid2ans = {}
+        correct = 0
+        total_loss = 0
+        total = 0
+        results= []
+        print("Len of the dataloader: ", len(loader))
+#             Our new TGIFQA-Dataset returns:
+#             return gif_tensor, self.questions[i], self.ans2id[self.answer[i]]
+        with torch.no_grad():
+            for i, (feats1, feats2, sent, target) in iter_wrapper(enumerate(loader)):
+                ques_id, boxes = -1, None
 
+
+                feats1, feats2, target = feats1.cuda(), feats2.cuda(), target.cuda()
+                feats = [feats1, feats2]
+
+                logit = self.model(feats, boxes, sent)
+                assert logit.dim() == target.dim() == 2
+                loss = self.bce_loss(logit, target)
+                loss = loss * logit.size(1)
+
+                total_loss += loss.item()
+
+
+                score, label = logit.max(1)
+                score_t, target = target.max(1)
+                correct += (label == target).sum().cpu().numpy()
+                total += len(label)
+                for l,s,t in zip(label, sent, target):
+                    result = []
+                    result.append(s)
+                    result.append("Prediction: {}".format(loader.dataset.label2ans[int(l.cpu().numpy())]))
+                    result.append("Answer: {}".format(loader.dataset.label2ans[int(t.cpu().numpy())]))
+                    results.append(result)
+            return total_loss/total, correct/total*100, results
+        
     def predict(self, eval_tuple: DataTuple, dump=None):
         """
         Predict the answers to questions in a data split.
@@ -219,21 +275,23 @@ class VQA:
 
 if __name__ == "__main__":
     print("Inside main")
-    print(os. environ['PYTHONPATH'])
     # Build Class
-    vqa = VQA()
+    vqa = VQA(attention=True)
     
     #rest of the model
     for param in vqa.model.parameters():
-        print(param)
         param.requires_grad = False
         
+    # to train cross model encoder along with cnn_bridge
+    for param in vqa.model.lxrt_encoder.model.bert.encoder.x_layers.parameters():
+        param.requires_grad = True
+
     for param in vqa.model.lxrt_encoder.model.bert.encoder.r_layers.cnn_bridge.parameters():
         param.requires_grad = True
-        
-#     print(vqa.model)
-#     print("*****************\n"*10)
-    print("Back to main()")
+    for param in vqa.model.lxrt_encoder.model.bert.encoder.r_layers.s5.parameters():
+        param.requires_grad = True
+    for param in vqa.model.logit_fc.parameters():
+        param.requires_grad = True
     # Load VQA model weights
     # Note: It is different from loading LXMERT pre-trained weights.
     if args.load is not None:

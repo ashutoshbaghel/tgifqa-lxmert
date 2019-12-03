@@ -183,7 +183,6 @@ class TGIF(torch.utils.data.Dataset):
                 index of the video replacement that can be decoded.
         """
         index = 0
-        #print("HERE , ", index)
         if self.mode in ["train", "val"]:
             # -1 indicates random sampling.
             temporal_sample_index = -1

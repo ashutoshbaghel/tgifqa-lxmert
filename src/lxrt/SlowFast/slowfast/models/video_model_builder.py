@@ -132,7 +132,7 @@ class SlowFastModel(nn.Module):
     https://arxiv.org/pdf/1812.03982.pdf
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, attention=False):
         """
         The `__init__` method of any subclass should also contain these
             arguments.
@@ -142,12 +142,12 @@ class SlowFastModel(nn.Module):
         """
         super(SlowFastModel, self).__init__()
         self.num_pathways = 2
-        self._construct_network(cfg)
+        self._construct_network(cfg, attention)
         init_helper.init_weights(
             self, cfg.MODEL.FC_INIT_STD, cfg.RESNET.ZERO_INIT_FINAL_BN
         )
 
-    def _construct_network(self, cfg):
+    def _construct_network(self, cfg, attention=False):
         """
         Builds a SlowFast model. The first pathway is the Slow pathway and the
             second pathway is the Fast pathway.
@@ -300,7 +300,7 @@ class SlowFastModel(nn.Module):
             trans_func_name=cfg.RESNET.TRANS_FUNC,
         )
         
-        self.cnn_bridge =  cnn_bridge.cnn_bridge_network(768, 2304, attention=False)
+        self.cnn_bridge =  cnn_bridge.cnn_bridge_network(768, 2304, attention)
 
         self.head = head_helper.ResNetBasicHead(
             dim_in=[
